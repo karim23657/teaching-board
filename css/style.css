@@ -1,0 +1,54 @@
+html, body {
+	height: 100%;
+	width:100%;
+	margin: 0px;
+	overflow: hidden;
+	font-size 20px;
+}
+
+#draw {
+	height: 100%;
+	width: 100%;
+	background-color: black;
+}
+
+#menu {
+	position: absolute;
+	width: 50%;
+	background-color: green;
+	bottom:0px;
+	height:2.5em;
+	margin-left:25%;
+}
+
+.menuButton {
+	height: 100%;
+	width: 8%;
+	border: none;
+	font-weight: bold;
+	color:white;
+	bottom:0;
+	background-color: green;
+	vertical-align:middle;
+	font-size: 2em;
+	outline: none;
+}
+
+button.menuButton:active {
+	transform: translateY(2px);
+}
+
+.red {
+	background-color: red;
+}
+
+.white {
+	background-color: white;
+}
+
+.blue {
+	background-color: blue;
+}
+.black {
+	background-color: black;
+}

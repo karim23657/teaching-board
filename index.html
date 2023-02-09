@@ -1,0 +1,955 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+
+		<link rel="stylesheet" href="css/style.css">
+		<script src="js/jquery.min.js"></script>
+		<script src="js/hammer.min.js"></script>
+		<script src="js/jquery-ui.js" ></script>
+
+  <script src="js/camera_utils.js" ></script>
+  <script src="js/wasm-check.min.js" ></script>
+  <script src="js/tflite-simd.js" language="javascript"></script>
+  <script src="js/tflite.js" language="javascript"></script>
+    <script src="js/TimeWorker.js" language="javascript"></script>
+
+  <link rel="stylesheet" type="text/css" href="css/index.css">
+  <link rel="stylesheet" type="text/css" href="css/jquery-ui.css">
+<link rel="stylesheet" href="css/font-awesome.min.css">
+<link rel="stylesheet" href="css/style_slides.css">
+<link rel="stylesheet" href="css/index.min.css">
+		<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
+
+		<script>
+			var paintColor = "black";
+			
+			var strokeSize = 3;
+			var blendMode = "normal";
+			var historoo = {
+    redo_list: [],
+    undo_list: [],
+	slides:[]}
+
+			const changeColor = (color) => {
+				paintColor = color;
+				$('button.menuButton1 i.fa.fa-paint-brush').css('color',color);
+			}
+
+			const increaseSize = () => {
+				strokeSize++;
+				updateStrokeSize();
+			}
+
+			const decreaseSize = () => {
+				if (strokeSize < 2) {
+					return;
+				}
+				strokeSize--;
+				updateStrokeSize();
+			}
+
+			const updateStrokeSize = () => {
+				$("#strokeSize").html(strokeSize);
+			}
+
+			// when document ready
+			$(document).ready(function(){
+
+				updateStrokeSize();
+
+				var mc = new Hammer(document.getElementById('draw'));
+				paper.setup(document.getElementById('draw'));
+				
+				// handle touch input
+				mc.on("hammer.input", function(ev) {
+				   // console.log(ev);
+
+				   if (ev.isFirst) {
+				   		// start
+				   		if (ev.srcEvent.shiftKey) {
+				   			// color matches background (essentially erase)
+				   			startDraw(ev, "black", strokeSize * 4, "destination-out");
+				   		}else if (blendMode=='destination-out') {
+				   			// color matches background (essentially erase)
+				   			startDraw(ev, "black", strokeSize * 5, "destination-out");
+				   		} else {
+				   			// draw
+				   			startDraw(ev);
+				   		}
+				   } else if (ev.isFinal) {
+				   		// last
+				   		endDraw(ev);
+				   } else {
+				   		// middle
+				   		middleDraw(ev);
+				   }
+
+				});
+
+				// handle startDraw
+				const startDraw = (ev, strokeColor = paintColor, strokeWidth = strokeSize, blendMode="normal" ) => {
+					//console.log("Start Draw!!", ev.center.x, ev.center.y);
+					var path = new paper.Path({
+						strokeColor: strokeColor,
+						strokeWidth: strokeWidth,
+						strokeCap: "round",
+						blendMode: blendMode
+					});
+				}
+
+				// handle middleDraw
+				const middleDraw = (ev) => {
+					//console.log("Middle Draw!!", ev.center.x, ev.center.y);
+					paper.project._activeLayer.lastChild.add({x: ev.center.x-150, y: ev.center.y})
+				}
+
+				// handle endDraw
+				const endDraw = (ev) => {
+					//console.log("End Draw!!", ev.center.x, ev.center.y);
+					paper.project._activeLayer.lastChild.simplify(5)
+					historoo.undo_list.push(paper.exportJSON())
+				}
+
+
+
+
+
+
+			});
+				
+				
+				function undo(){
+				var lastPoint=historoo.undo_list.pop();
+				historoo.redo_list.push(lastPoint)
+				paper.project.clear();
+				paper.project.importJSON(historoo.undo_list[historoo.undo_list.length-1])
+				}
+				function redo(){
+				var lastPoint=historoo.redo_list.pop();
+				historoo.undo_list.push(lastPoint)
+				paper.project.clear();
+				paper.project.importJSON(lastPoint)}
+				
+				function cngBlendmode(type){
+				    blendMode=type;
+					enableObjctEdit(false);
+				    
+				}
+				
+				
+				function addbgImage(url){
+				$('#draw').css('background', 'rgb(47, 47, 47) url("'+url+'") no-repeat scroll 50% 50%');
+				}
+				
+
+
+
+
+
+// window.addEventListener('paste', ... or
+document.onpaste = function(event){
+  var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+
+  for (index in items) {
+    var item = items[index];
+    if (item.kind === 'file') {
+      var blob = item.getAsFile();
+      var reader = new FileReader();
+      reader.onload = function(event){
+        addbgImage(event.target.result)}; // data url!
+      reader.readAsDataURL(blob);
+    }
+  }
+}
+
+
+function tglImageUpl() {
+  document.getElementById("myDropdown").classList.toggle("show");
+}
+function tglImageUpl1() {
+  document.getElementById("myDropdown1").classList.toggle("show");
+}
+		</script>
+		
+		
+		
+		
+		<script>
+		function dragNdrop(event) {
+    var fileName;
+	var urlList=[];
+	for (var i = 0; i < event.target.files.length; i++) {
+	fileName = URL.createObjectURL(event.target.files[i]);
+	urlList.push(fileName)
+	}
+
+	createSlideShow(urlList)
+
+	 tglImageUpl()
+}
+		function dragNdrop1(event) {
+    var fileName;
+	var urlList=[];
+	for (var i = 0; i < event.target.files.length; i++) {
+	fileName = URL.createObjectURL(event.target.files[i]);
+	urlList.push(fileName)
+	}
+	var elm='<img src="xxx" style="/*width:100%*/">';
+for (var i = 0; i < urlList.length; i++) {
+	$("div.mySlides[style='display: block;']").append(elm.replace('xxx',urlList[i]))
+	
+	}
+	 tglImageUpl1()
+}
+function drag() {
+    document.getElementById('uploadFile').parentNode.className = 'draging dragBox';
+}
+function drop() {
+    document.getElementById('uploadFile').parentNode.className = 'dragBox';
+}
+		</script>
+
+
+<script>
+function createSlideShow(list){
+
+var slides = [];
+var slides1 = [];
+var elm='<div class="mySlides fade"><img src="xxx" style="/*width:100%*/"><div class="numbertext" style="display:none">vvvg</div><div class="datas" style="display:none"></div></div>';
+var elm1='<div class="slide"><img src="xxx" style="width:100%;height: inherit;"></div>';
+for (var i = 0; i < list.length; i++) {
+	slides.push(elm.replace('xxx',list[i]).replace('vvvg',i))
+	slides1.push(elm1.replace('xxx',list[i]))
+	}
+console.log(slides)
+$(".slideshow-container").append(slides);
+$(".all-slides").append(slides1);
+historoo.slides={};
+showSlides(slideIndex);
+$(".cloned-slides").html('')
+$(".slide").each(function(i) {
+  var item = $(this);
+  var item_clone = item.clone();
+  item.data("clone", item_clone);
+  var position = item.position();
+  item_clone
+  .css({
+    left: position.left,
+    top: position.top,
+    visibility: "hidden"
+  })
+  .attr("data-pos", i+1).addClass("clone");
+  
+  $("#cloned-slides").append(item_clone);
+});
+
+
+$(".all-slides").sortable({
+  
+  axis: "y",
+  revert: true,
+  scroll: false,
+  placeholder: "sortable-placeholder",
+  cursor: "move",
+
+  start: function(e, ui) {
+    ui.helper.addClass("exclude-me");
+    $(".all-slides .slide:not(.exclude-me)")
+      .css("visibility", "hidden");
+    ui.helper.data("clone").hide();
+    $(".cloned-slides .slide").css("visibility", "visible");
+  },
+
+  stop: function(e, ui) {
+    $(".all-slides .slide.exclude-me").each(function() {
+      var item = $(this);
+      var clone = item.data("clone");
+      var position = item.position();
+
+      clone.css("left", position.left);
+      clone.css("top", position.top);
+      clone.show();
+
+      item.removeClass("exclude-me");
+    });
+    
+    $(".all-slides .slide").each(function() {
+      var item = $(this);
+      var clone = item.data("clone");
+      
+      clone.attr("data-pos", item.index());
+    });
+
+    $(".all-slides .slide").css("visibility", "visible");
+    $(".cloned-slides .slide").css("visibility", "hidden");
+  },
+
+  change: function(e, ui) {
+    $(".all-slides .slide:not(.exclude-me)").each(function() {
+      var item = $(this);
+      var clone = item.data("clone");
+      clone.stop(true, false);
+      var position = item.position();
+      clone.css({
+        left: position.left,
+        top: position.top
+      });
+    });
+  }  
+});
+}
+</script>
+<script>
+var slideIndex = 1;
+
+
+function plusSlides(n) {
+  showSlides(slideIndex += n);
+}
+
+function currentSlide(n) {
+  showSlides(slideIndex = n);
+}
+
+function showSlides(n) {
+  var i;
+  var slides = document.getElementsByClassName("mySlides");
+  var numbertext = document.getElementsByClassName("numbertext");
+  var datas = document.getElementsByClassName("datas");
+  
+  if (n > slides.length) {slideIndex = 1}    
+  if (n < 1) {slideIndex = slides.length}
+  for (i = 0; i < slides.length; i++) {
+      slides[i].style.display = "none";  
+  }
+  
+
+  slides[slideIndex-1].style.display = "block"; 
+  
+  
+  
+  var tmpnum=$('#indexOf').text();
+  $('#indexOf').text(slideIndex);
+  
+  if (!/\d/.test(tmpnum)) {tmpnum = 1}
+  console.log("Slide "+tmpnum+" Saved");
+  historoo.slides[tmpnum]=paper.exportJSON();
+  paper.project.clear();
+  if(historoo.slides[slideIndex]!=undefined){
+      paper.project.importJSON(historoo.slides[slideIndex])
+	  }
+}
+</script>
+
+	</head>
+<style>
+.ui-resizable-handle {
+  position: absolute;
+  font-size: 0.1px;
+  z-index: 99999;
+  display: block;
+  padding: 8px;
+  background: blue;
+}
+
+body{background-color: rgb(202, 202, 202);}
+
+.mySlides {display: none;text-align:center;}
+/*img {vertical-align: middle;}*/
+img{
+    /*height: 500px;*/
+	width: 80%;
+}
+
+/* Slideshow container */
+.slideshow-container {
+max-width: 1000px;
+position: absolute;
+margin: auto;
+top: 0;
+z-index: -1;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 80%;
+}
+
+/* Next & previous buttons */
+.prev, .next {
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  width: auto;
+  padding: 16px;
+  margin-top: -22px;
+  color: #9dc447;
+  font-weight: bold;
+  font-size: 18px;
+  transition: 0.6s ease;
+  border-radius: 0 3px 3px 0;
+  user-select: none;
+}
+
+/* Position the "next button" to the right */
+.next {
+  right: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+.prev {
+  left: 150px;
+}
+
+/* On hover, add a black background color with a little bit see-through */
+.prev:hover, .next:hover {
+  background-color: rgba(0,0,0,0.8);
+}
+
+/* Caption text */
+.text {
+  color: #f2f2f2;
+  font-size: 15px;
+  padding: 8px 12px;
+  position: absolute;
+  bottom: 8px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Number text (1/3 etc) */
+.numbertext {
+  color: #f2f2f2;
+  font-size: 12px;
+  padding: 8px 12px;
+  position: absolute;
+  top: 0;
+}
+
+/* The dots/bullets/indicators */
+.dot {
+  cursor: pointer;
+  height: 15px;
+  width: 15px;
+  margin: 0 2px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color 0.6s ease;
+}
+
+.active, .dot:hover {
+  background-color: #717171;
+}
+
+/* Fading animation */
+.fade {
+  -webkit-animation-name: fade;
+  -webkit-animation-duration: 1.5s;
+  animation-name: fade;
+  animation-duration: 1.5s;
+}
+
+@-webkit-keyframes fade {
+  from {opacity: .4} 
+  to {opacity: 1}
+}
+
+@keyframes fade {
+  from {opacity: .4} 
+  to {opacity: 1}
+}
+
+/* On smaller screens, decrease text size */
+@media only screen and (max-width: 300px) {
+  .prev, .next,.text {font-size: 11px}
+}
+
+</style>
+
+
+
+
+<style>
+#draw {
+    background-color: #0000;
+}
+#menu1 {
+    position: absolute;
+    width: 50%;
+    background-color: green;
+    top: 0px;
+    height: 2.5em;
+    margin-left: 25%;
+	z-index: 100;
+}
+.menuButton1 {
+height: 100%;
+/*width: 8%;*/
+border: none;
+font-weight: bold;
+color: white;
+bottom: 0;
+background-color: green;
+vertical-align: middle;
+font-size: 1.2em;
+outline: none;
+z-index: 100;
+}
+.dropdown {
+float: right;}
+
+.dropbtn , .dropdown {
+  background-color: #4CAF50;
+  color: white;
+  /*padding: 16px;*/
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  height: 100%;
+
+}
+
+.dropbtn:hover, .dropbtn:focus {
+  background-color: #3e8e41;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  overflow: auto;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  right: 0;
+  z-index: 1;
+}
+.show {
+  display: block;
+}
+
+
+/* drag and drop uploader */
+
+
+
+.uploadOuter {
+  text-align: center;
+  padding: 20px;
+}
+.uploadOuter strong {
+  padding: 0 10px;
+}
+.dragBox {
+  width: 250px;
+  height: 100px;
+  margin: 0 auto;
+  position: relative;
+  text-align: center;
+  font-weight: bold;
+  line-height: 95px;
+  color: #999;
+  border: 2px dashed #ccc;
+  display: inline-block;
+  transition: transform 0.3s;
+}
+.dragBox input[type="file"] {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  top: 0;
+  left: 0;
+}
+.draging {
+  transform: scale(1.1);
+}
+#preview {
+  text-align: center;
+}
+#preview img {
+  max-width: 100%;
+}
+</style>
+
+
+<style>
+#mycontentf{
+position: absolute;
+top: 50%;
+z-index: 10;}
+.bordert{border: 5px solid #F7840B;}
+
+
+
+.toolbar{
+float: left;
+height: 100%;
+padding: 0 8px;
+border-right: 1px solid black;
+}
+
+
+.selected{
+border-color: #9ecaed;
+box-shadow: 0 0 10px #9ecaed;
+padding: 8px;
+border-radius: 50%;
+}
+</style>
+
+
+
+
+
+
+
+
+<style>
+
+.drawing-board{
+height: 100%;
+margin-left: 150px;
+}
+.editing-board{
+width: 150px;
+height: 100%;
+}
+</style>
+	<body>
+<div class="drawing-board">
+		<canvas id="draw">
+
+		</canvas>
+		
+		
+		
+		<div class="slideshow-container">
+
+</div>
+</div>
+
+
+
+
+		
+		<div id="menu1">
+		    <div class="toolbar" style="">
+			<button class="menuButton1 " onclick=" undo();"><i class="fa fa-undo"></i></button>
+			<button class="menuButton1 " onclick="redo();"><i style="transform: scale(-1, 1);" class="fa fa-undo"></i></button>
+			</div>
+			<div class="toolbar" >
+			<button class="menuButton1 " onclick="cngBlendmode('normal');"><i class="fa fa-paint-brush selected"></i></button>
+			<button class="menuButton1 " onclick="cngBlendmode('destination-out');"><i class="fa fa-eraser"></i></button>
+			<button class="menuButton1 " onclick="enableObjctEdit(true);"><i class="fa fa-arrows"></i></button>
+			<div class="dropdown">
+			<button class="dropbtn " onclick="tglImageUpl1();" style="font-size: 1.2em;"><i style="/*! transform: translateY(%); */" class="fa fa-folder-open"></i></button>
+			<div class="dropdown-content" id="myDropdown1">
+    
+	
+	<div class="uploadOuter">
+  <label for="uploadFile1" class="dropbtn ">Upload Image</label>
+  <strong>OR</strong>
+<span class="dragBox" >
+  Darg and Drop image here
+<input type="file" onChange="dragNdrop1(event)"  ondragover="drag()" ondrop="drop()" id="uploadFile1"  multiple/>
+</span>
+</div>
+
+
+  </div>
+  </div>
+			</div>
+			<div class="dropdown">
+			<button class="dropbtn " onclick="tglImageUpl();"style="font-size: 2em;"><i class="fa fa-image" style="transform: translateY(-13%);"></i></button>
+			<div class="dropdown-content" id="myDropdown">
+    
+	
+	<div class="uploadOuter">
+  <label for="uploadFile" class="dropbtn ">Upload Image</label>
+  <strong>OR</strong>
+<span class="dragBox" >
+  Darg and Drop image here
+<input type="file" onChange="dragNdrop(event)"  ondragover="drag()" ondrop="drop()" id="uploadFile"  multiple/>
+</span>
+</div>
+
+
+  </div>
+  </div>
+  <div id="indexOf">
+  </div> 
+  </div> 
+		
+		
+	<a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+<a class="next" onclick="plusSlides(1)">&#10095;</a>	
+		
+		<div id="menu">
+			<button class="menuButton red" onclick="changeColor('red');"></button>
+			<button class="menuButton white" onclick="changeColor('white');"></button>
+			<button class="menuButton black" onclick="changeColor('black');"></button>
+			<button class="menuButton blue" onclick="changeColor('blue');"></button>
+			<button class="menuButton plusMinus" onclick="increaseSize();">+</button>
+			<span class="menuButton" id="strokeSize">3</span>
+			<button class="menuButton plusMinus" onclick="decreaseSize();">-</button>
+<input type="color" id="bgclrpicker" value="#e6e6e6" style="outline: none;border: 0;padding: 0;width: 31px;height: 31px;float: right;">
+
+		</div>
+		
+		
+		<video class="input_video" style="display:none;"></video>
+		<canvas class="output_canvas2" id="mycontentf"  width="251px" height="185px" style="transform: rotateY(180deg);position: absolute;top: 366.5px;left: 767px;"></canvas>
+		<input id="myInputvirtual" onchange="loadvirtualbg(event)" type="file" style="visibility:hidden" />
+		
+		<script type="text/javascript" src="js/dat.gui.min.js"></script>
+	  <script type="text/javascript">
+	  var virtualBg_img;
+	  function loadvirtualbg(event) {
+    var fileName;
+	for (var i = 0; i < event.target.files.length; i++) {
+	fileName = URL.createObjectURL(event.target.files[i]);
+	
+	}
+	  var img = new Image();
+    img.src = fileName;
+
+
+    img.onload = function() {
+
+            virtualBg_img=img;
+			obj.virtualBackground= obj.virtualBackground ? false : true ;
+
+    }
+	
+}
+	  </script>
+	  <script type="text/javascript">
+	    var obj = {
+	        blur:0,
+	        blur_m:0,
+	        opacity:100,
+	        brightness:100,
+	        contrast: 100,
+	        saturate: 100,
+			threshold: 190,
+			BlurBackground: false,
+			virtualBackground: false,
+			BlurBg: 16,
+			opacity_bg:100,
+	        brightness_bg:100,
+	        contrast_bg: 100,
+	        saturate_bg: 100,
+			loadbg:function() { 
+                document.getElementById('myInputvirtual').click();
+				
+			}
+	
+	    };
+	
+	    var gui = new dat.GUI();
+	
+	    
+	    
+	    gui.add(obj, 'blur' ,0 , 20, 0.25);
+	    gui.add(obj, 'opacity' ,0 , 200, 1);
+	    gui.add(obj, 'brightness' ,0 , 200, 1);
+	    gui.add(obj, 'contrast' ,0 , 200, 1);
+	    gui.add(obj, 'saturate' ,0 , 200, 1);
+	    
+		
+		var f1 = gui.addFolder('Mask');
+		f1.add(obj, 'threshold' ,0 , 255, 1).name('threshold');
+		f1.add(obj, 'blur_m',0 , 20, 0.25).name('blur');
+		
+		var f2 = gui.addFolder('Background');
+		f2.add(obj, 'BlurBackground').name('Blur Background');
+	    f2.add(obj, 'BlurBg',0 , 20, 0.5);
+		f2.add(obj, 'opacity_bg' ,0 , 200, 1);
+	    f2.add(obj, 'brightness_bg' ,0 , 200, 1);
+	    f2.add(obj, 'contrast_bg' ,0 , 200, 1);
+	    f2.add(obj, 'saturate_bg' ,0 , 200, 1);
+	    f2.add(obj, 'loadbg').name('load Background');
+	   
+	
+	  </script>
+	  
+		<script src="js/paper-full.min.js"></script>
+		<script src="js/index.min.js" ></script>		
+		<script type="text/javascript" src="js/index8.js"></script>
+
+		<script src="js/utils1-0.js" language="javascript"></script>
+  <script src="js/utils-1.js" language="javascript"></script>
+		<script >
+		 $('.toolbar').on('click','button', function() {
+          var btns = $(this).index();
+          $(this).parent().find('.selected').removeClass('selected');
+          $(this).find('i').addClass('selected');
+		  
+          //op.eq(btns).attr('selected', true);
+		  })
+		</script >
+		<script >
+$(document).ready(function() {
+
+    $("#mycontentf").resizable({ disabled: true }).parent('.ui-wrapper').draggable({ disabled: true });
+	$("#mycontentf").dblclick(function(){
+	    $("#mycontentf").toggleClass('bordert');
+		if($("#mycontentf").hasClass('bordert')){
+		$(".ui-resizable-handle").css("background-color", "blue");
+		$("#mycontentf").resizable({ disabled: false }).parent('.ui-wrapper').draggable({ disabled: false });
+		}else{
+		$(".ui-resizable-handle").css("background-color", "#FFF0");
+		$("#mycontentf").resizable({ disabled: true }).parent('.ui-wrapper').draggable({ disabled: true });
+		}
+		
+		 })
+		 
+		 
+		 
+	$('.slideshow-container').on('dblclick', 'img',function(){
+	    //console.log(this)
+		$(".ui-resizable-handle").css("background-color", "blue");
+	    $(this).toggleClass('bordert');
+		if($(this).hasClass('bordert')){
+		$(".ui-resizable-handle").css("background-color", "blue");
+		$(this).resizable({ disabled: false ,aspectRatio: true,}).parent('.ui-wrapper').draggable({ disabled: false });
+		}else{
+		$(".ui-resizable-handle").css("background-color", "#FFF0");
+		$(this).resizable({ disabled: true }).parent('.ui-wrapper').draggable({ disabled: true });
+		}
+		
+		 })
+		 
+		 
+		 
+		 
+    $('button.menuButton1 i.fa.fa-paint-brush').css('paintColor',paintColor);
+	$('.editing-board').on('click','.slide', function(e) {
+  var c=$('.all-slides .slide').index($(this));
+  plusSlides(c+1-slideIndex)
+})
+	
+	
+	
+	
+ });
+
+
+
+
+
+
+
+
+
+const picker = new CP(document.querySelector('input#bgclrpicker'));
+      
+	  picker.on('change', function(r, g, b, a) {
+          $(document.body).css('background-color',this.color(r, g, b, a));
+		  this.source.value = this.color(r, g, b, a);
+		  //console.log("rgb(r, g, b, a)")
+      });
+	  picker.set(230, 230, 230);
+
+
+
+
+
+$(window).keydown(function (e) {
+    console.log(e)
+	switch(e.which) {
+        case 37: // left
+		    plusSlides(-1);
+        break;
+
+        case 38: // up
+        break;
+
+        case 39: // right
+		    plusSlides(1);
+        break;
+
+        case 40: // down
+        break;
+
+        default: return; // exit this handler for other keys
+    }
+    e.preventDefault(); // prevent the default action (scroll / move caret)
+});
+
+
+
+
+</script>
+
+
+
+<script>
+
+//$('.slideshow-container').css('z-index')
+//$('button.menuButton1 i.fa.fa-arrows').hasClass('selected')
+function enableObjctEdit(e){
+    if(e){
+	    $('.slideshow-container').css('z-index','1');
+	}else{
+	    $('.slideshow-container').css('z-index','-1');
+		}
+}
+</script>
+
+
+
+
+<script>
+videoElement.addEventListener('loadeddata', function() {
+   console.log("camera loaded");
+   var vidsizes=videoElement.getClientRects()
+
+   canvasElement.width=256;
+canvasElement.height=144;
+   
+   
+   
+   var buildParams = {
+    backgroundType: 'blur',
+    backgroundFilename: 'nn.png',
+  //isVirtualBackground:""
+   
+  }
+
+   createVirtualBackgroundService(buildParams).then((service) => {
+    const effect = service.startEffect(camera.g);
+     
+     console.log( { service, effect });
+     //videoElement.srcObject=service._inputVideoElement;
+  })
+}, false);
+</script>
+
+
+
+
+
+
+<div class="editing-board">
+<!-- slides start -->
+<div class='all-slides'>
+  <h2 class='slides-title'>Slides</h2>
+  
+
+
+</div>
+<div class='cloned-slides' id='cloned-slides'></div>
+
+<!-- slides end -->
+</div>
+
+
+
+
+
+
+
+
+
+	</body>
+</html>
